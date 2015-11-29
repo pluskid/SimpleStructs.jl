@@ -5,7 +5,7 @@ export @defstruct
 """A convenient macro copied from Mocha.jl that could be used to define structs
 with default values and type checks. For example
 ```julia
-@defstruct MyStruct Any (
+@defstruct MyStruct (
   field1 :: Int = 0,
   (field2 :: AbstractString = "", !isempty(field2))
 )
@@ -24,12 +24,21 @@ is available.
 The macro will define a constructor that could accept
 the keyword arguments.
 """
-macro defstruct(name, super_name, fields)
+macro defstruct(name, fields)
   @assert fields.head == :tuple
   fields     = fields.args
   @assert length(fields) > 0
-  name       = esc(name)
-  super_name = esc(super_name)
+
+  if isa(name, Symbol)
+    name       = esc(name)
+    super_name = :Any
+  else
+    @assert(isa(name, Expr) && name.head == :comparison && length(name.args) == 3 && name.args[2] == :(<:),
+            "name must be of form 'Name <: SuperType'")
+    @assert(isa(name.args[1], Symbol) && isa(name.args[3], Symbol))
+    super_name = esc(name.args[3])
+    name       = esc(name.args[1])
+  end
 
   field_defs     = Array(Expr, length(fields))        # :(field2 :: Int)
   field_names    = Array(Expr, length(fields))        # :field2
@@ -66,7 +75,7 @@ macro defstruct(name, super_name, fields)
   ctor = Expr(:(=), ctor_def, ctor_body)
 
   quote
-    type $(name) <: $super_name
+    type $(name) <: $(super_name)
       $type_body
     end
 
