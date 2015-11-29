@@ -1,6 +1,6 @@
 module SimpleStructs
 
-export @defstruct
+export @defstruct, @defimmutable
 
 """A convenient macro copied from Mocha.jl that could be used to define structs
 with default values and type checks. For example
@@ -25,8 +25,22 @@ The macro will define a constructor that could accept
 the keyword arguments.
 """
 macro defstruct(name, fields)
-  @assert fields.head == :tuple
-  fields     = fields.args
+  _defstruct_impl(false, name, fields)
+end
+
+"""A convenient macro to define immutable structs. The same as
+`@defstruct` except that the defined type is immutable.
+"""
+macro defimmutable(name, fields)
+  _defstruct_impl(true, name, fields)
+end
+
+function _defstruct_impl(is_immutable, name, fields)
+  if isa(fields, Expr) && fields.head == :tuple
+    fields = fields.args
+  else
+    fields = [fields]
+  end
   @assert length(fields) > 0
 
   if isa(name, Symbol)
@@ -74,12 +88,22 @@ macro defstruct(name, fields)
   ctor_def = Expr(:call, name, Expr(:parameters, field_defaults...))
   ctor = Expr(:(=), ctor_def, ctor_body)
 
-  quote
-    type $(name) <: $(super_name)
-      $type_body
-    end
+  if is_immutable
+    quote
+      immutable $(name) <: $(super_name)
+        $type_body
+      end
 
-    $ctor
+      $ctor
+    end
+  else
+    quote
+      type $(name) <: $(super_name)
+        $type_body
+      end
+
+      $ctor
+    end
   end
 end
 
