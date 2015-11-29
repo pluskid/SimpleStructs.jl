@@ -40,9 +40,9 @@ The macros can be called in the following way
 
 ```julia
 @defstruct StructName (
-  field_name :: field_type = default_val,
+  field_name :: field_type,
   (fname2    :: ftype2 = default_val2, fname2 > 0 && fname2 < 5),
-  (fname3    :: ftype3 = default_val3, fname3 <= fname2)
+  (fname3    :: ftype3 = default_val3, fname3 <= fname2),
 )
 ```
 
