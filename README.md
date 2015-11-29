@@ -1,6 +1,7 @@
 # SimpleStructs
 
 [![Build Status](https://travis-ci.org/pluskid/SimpleStructs.jl.svg?branch=master)](https://travis-ci.org/pluskid/SimpleStructs.jl)
+[![Windows Build status](https://ci.appveyor.com/api/projects/status/u6ew8y036f68i4cs?svg=true)](https://ci.appveyor.com/project/pluskid/simplestructs-jl)
 
 This is a simple utility of defining structs by specifying types, default values and value constraints for fields, with
 an automatically defined user-friendly constructor. This code is extracted from [Mocha.jl](https://github.com/pluskid/Mocha.jl)
