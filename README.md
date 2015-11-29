@@ -47,12 +47,12 @@ The macros can be called in the following way
 ```
 
 The `StructName` can be `StructName <: SuperTypeName` if the struct needs to be a subtype of
-`SuperTypeName`. Each field could have
+`SuperTypeName`. Each field should have
 
 * field name: the name of the field.
 * field type: the type used to store the field value. Note the constructor accept any value type, and calls `convert` explicitly on the user supplied values. So there is no frustration about Julia types being not [covariant](https://en.wikipedia.org/wiki/Covariance_and_contravariance_(computer_science)). For example, for a field of type `Vector{AbstractString}`, it is OK if user call with `["foo", "bar"]`, which will be of type `Vector{ASCIIString}`.
-* field default value: this is optional, when a default value is not presented, it means the field is *required*. An `AssertionError` will be thrown if the user does not provide a value for this field.
-* field value constraints: value constraints can be used to ensure the user supplied values are reasonable. Note the constraints are asserted in the order as the fields are defined. So in the example above, the constraint for `fname3` can use the value for `fname2` and safely assume the constraints for `fname2` is already satisfied.
+* field default value: this is optional. When a default value is not presented, it means the field is *required*. An `AssertionError` will be thrown if the user does not provide a value for this field.
+* field value constraints: this is optional. Value constraints can be used to ensure the user supplied values are reasonable. Note the constraints are asserted in the order as the fields are defined. So in the example above, the constraint for `fname3` can use the value for `fname2` and safely assume the constraints for `fname2` is already satisfied.
 
 A constructor will be automatically defined, where each argument should be provided as keyword arguments:
 
