@@ -19,30 +19,44 @@ struct1 = Struct1()
 
 @test struct1.i1_field == 0
 
-struct1 = Struct1(i2_field = 2.0) # this should be fine
+@test isa(Struct1(i2_field = 2.0), Struct1)
 @test_throws InexactError Struct1(i2_field = 2.5)
 @test_throws AssertionError Struct1(i2_field = 2.0, i1_field = 3)
 
 @test_throws MethodError Struct1(i1_field = "foo")
 
 ################################################################################
-# convert is called on parameters, more user-friendly than type matching
+# required fields
 ################################################################################
 @defstruct Struct2 (
+  i_field   :: Int,
+  (i_field2 :: Int, i_field2 > 0),
+  i_field3  :: Int = -1
+)
+
+@test_throws AssertionError Struct2()
+@test_throws AssertionError Struct2(i_field=0)
+@test_throws AssertionError Struct2(i_field=0, i_field2=0)
+@test isa(Struct2(i_field=0, i_field2=1), Struct2)
+
+################################################################################
+# convert is called on parameters, more user-friendly than type matching
+################################################################################
+@defstruct Struct3 (
   field1 :: AbstractString = "",
   field2 :: Vector{AbstractString} = []
 )
 
-struct2 = Struct2(field1 = "ascii string")
-struct2 = Struct2(field1 = "unicode α-β")
-struct2 = Struct2(field2 = ["vector", "of", "ASCII", "string"])
+struct3 = Struct3(field1 = "ascii string")
+struct3 = Struct3(field1 = "unicode α-β")
+struct3 = Struct3(field2 = ["vector", "of", "ASCII", "string"])
 
 ################################################################################
 # immutable structs
 ################################################################################
-@defimmutable Struct3 (
+@defimmutable Struct4 (
   field :: Int = 0
 )
 
-struct3 = Struct3()
-@test_throws ErrorException (struct3.field = 2)
+struct4 = Struct4()
+@test_throws ErrorException (struct4.field = 2)
