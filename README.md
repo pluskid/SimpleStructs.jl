@@ -10,7 +10,7 @@ This utility is useful to define structs holding specifications or hyperparamete
 of a stochastic gradient descent optimizer used in MXNet.jl:
 
 ```julia
-@defstruct SGDOptions AbstractOptimizerOptions (
+@defstruct SGDOptions <: AbstractOptimizerOptions (
   (lr                :: Real = 0.01, lr > 0),
   (momentum          :: Real = 0.0, momentum >= 0),
   (grad_clip         :: Real = 0, grad_clip >= 0),
@@ -22,7 +22,7 @@ of a stochastic gradient descent optimizer used in MXNet.jl:
 And this is an example of the definition of a Dropout layer in Mocha.jl:
 
 ```julia
-@defstruct DropoutLayer Layer (
+@defstruct DropoutLayer <: Layer (
   name       :: AbstractString = "dropout",
   auto_scale :: Bool = true,
   (ratio     :: AbstractFloat = 0.5, 0 < ratio < 1),
