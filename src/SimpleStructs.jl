@@ -95,24 +95,27 @@ function _defstruct_impl(is_immutable, name, fields)
   type_param_names = Array(Symbol, 0)
 
   if isa(name, Symbol)
-    name       = name
     super_name = :Any
+    name       = name
   elseif isa(name, Expr) && name.head == :curly
     type_param_names = map(_type_param_name, name.args[2:end]) # :T
-    name       = name
     super_name = :Any
+    name       = name
   else
     @assert(isa(name, Expr) && name.head == :comparison && length(name.args) == 3 && name.args[2] == :(<:),
             "name must be of form 'Name <: SuperType'")
-    @assert(isa(name.args[1], Symbol) && isa(name.args[3], Symbol))
+    #@assert(isa(name.args[1], Symbol) && isa(name.args[3], Symbol))
+    if isa(name.args[1], Expr) && name.args[1].head == :curly
+        type_param_names = map(_type_param_name, name.args[1].args[2:end]) # :T
+    end
     super_name = name.args[3]
     name       = name.args[1]
   end
 
   field_defs     = Array(Expr, length(fields))        # :(field2 :: Int)
-  field_names    = Array(Any, length(fields))        # :field2
+  field_names    = Array(Any, length(fields))         # :field2
   field_defaults = Array(Expr, length(fields))        # :(field2 = 0)
-  field_types    = Array(Any, length(fields))        # Int
+  field_types    = Array(Any, length(fields))         # Int
   field_asserts  = Array(Expr, length(fields))        # :(field2 >= 0)
   required_field = Symbol[]
 
