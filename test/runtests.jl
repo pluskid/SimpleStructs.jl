@@ -70,5 +70,24 @@ struct4 = Struct4()
 )
 @test_throws MethodError struct5 = Struct5()
 struct5 = Struct5(field = [1,2,3])
+@test typeof(struct5) <: Struct5{Int, Float64}
 @test typeof(struct5.field) <: Vector{Int}
+@test struct5.field == [1,2,3]
 @test typeof(struct5.field2) <: Vector{Float64}
+@test struct5.field2 == [0.,0,0,0,0]
+
+################################################################################
+# type parameters with base class
+################################################################################
+@defimmutable Struct6{R<:Real, T<:Real} <: AbstractVector{R} (
+  field  :: Vector{R},
+  field2 :: Vector{T} = zeros(5),
+)
+@test_throws MethodError struct6 = Struct6()
+struct6 = Struct6(field = [-1,2,3], field2 = [0., 1.])
+@test typeof(struct6) <: Struct6{Int, Float64}
+@test typeof(struct6) <: AbstractVector{Int}
+@test typeof(struct6.field) <: Vector{Int}
+@test struct6.field == [-1,2,3]
+@test typeof(struct6.field2) <: Vector{Float64}
+@test struct6.field2 == [0.,1]
