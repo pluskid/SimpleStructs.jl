@@ -43,6 +43,47 @@ is not specified.
 immutable __Undefined
 end
 
+
+function _contains_type_param(expr, tp::AbstractVector)
+  for t in tp
+    if _contains_type_param(expr, t)
+      return true
+    end
+  end
+  return false
+end
+
+function _contains_type_param(expr, tp::Symbol)
+  if isa(expr, Symbol)
+    return expr == tp
+  else
+    for t in expr.args
+      if _contains_type_param(t, tp)
+        return true
+      end
+    end
+  end
+  return false
+end
+
+function _type_param_name(expr)
+  if isa(expr, Symbol)
+    expr
+  else
+    @assert isa(expr, Expr) && expr.head == :<:
+    expr.args[1]
+  end
+end
+
+function _name_to_call(name)
+    if isa(name, Expr) && name.head == :curly
+        type_param_names = map(_type_param_name, name.args[2:end])
+        Expr(:curly, name.args[1], type_param_names...)
+    else
+        name
+    end
+end
+
 function _defstruct_impl(is_immutable, name, fields)
   if isa(fields, Expr) && fields.head == :tuple
     fields = fields.args
@@ -51,43 +92,57 @@ function _defstruct_impl(is_immutable, name, fields)
   end
   @assert length(fields) > 0
 
+  type_param_names = Array(Symbol, 0)
+
   if isa(name, Symbol)
-    name       = esc(name)
+    name       = name
+    super_name = :Any
+  elseif isa(name, Expr) && name.head == :curly
+    type_param_names = map(_type_param_name, name.args[2:end]) # :T
+    name       = name
     super_name = :Any
   else
     @assert(isa(name, Expr) && name.head == :comparison && length(name.args) == 3 && name.args[2] == :(<:),
             "name must be of form 'Name <: SuperType'")
     @assert(isa(name.args[1], Symbol) && isa(name.args[3], Symbol))
-    super_name = esc(name.args[3])
-    name       = esc(name.args[1])
+    super_name = name.args[3]
+    name       = name.args[1]
   end
 
   field_defs     = Array(Expr, length(fields))        # :(field2 :: Int)
-  field_names    = Array(Expr, length(fields))        # :field2
+  field_names    = Array(Any, length(fields))        # :field2
   field_defaults = Array(Expr, length(fields))        # :(field2 = 0)
-  field_types    = Array(Expr, length(fields))        # Int
+  field_types    = Array(Any, length(fields))        # Int
   field_asserts  = Array(Expr, length(fields))        # :(field2 >= 0)
   required_field = Symbol[]
 
   for i = 1:length(fields)
     field = fields[i]
     if field.head == :tuple
-      field_asserts[i] = esc(field.args[2])
+      field_asserts[i] = field.args[2]
       field = field.args[1]
     end
     if field.head == :(=)
       fname             = field.args[1].args[1]
-      field_defs[i]     = esc(field.args[1])
-      field_names[i]    = esc(fname)
-      field_types[i]    = esc(field.args[1].args[2])
-      field_defaults[i] = Expr(:kw, fname, esc(field.args[2]))
+      field_defs[i]     = field.args[1]
+      field_names[i]    = fname
+      field_types[i]    = field.args[1].args[2]
+      if _contains_type_param(field.args[1].args[2], type_param_names)
+        field_defaults[i] = Expr(:kw, Expr(:(::), fname, field.args[1].args[2]), field.args[2])
+      else
+        field_defaults[i] = Expr(:kw, fname, field.args[2])
+      end
     else
       # no default value provided, required field
       fname             = field.args[1]
-      field_defs[i]     = esc(field)
-      field_names[i]    = esc(fname)
-      field_types[i]    = esc(field.args[2])
-      field_defaults[i] = Expr(:kw, fname, __Undefined())
+      field_defs[i]     = field
+      field_names[i]    = fname
+      field_types[i]    = field.args[2]
+      if _contains_type_param(field.args[2], type_param_names)
+        field_defaults[i] = Expr(:kw, Expr(:(::), fname, field.args[2]), __Undefined())
+      else
+        field_defaults[i] = Expr(:kw, fname, __Undefined())
+      end
       push!(required_field, fname)
     end
   end
@@ -97,7 +152,7 @@ function _defstruct_impl(is_immutable, name, fields)
 
   # constructor
   requires = map(required_field) do fname
-    :(@assert(!isa($fname, __Undefined), "value for " * string($fname) * " is required"))
+    :(@assert(!isa($fname, SimpleStructs.__Undefined), "value for " * string($fname) * " is required"))
   end
   converts = map(zip(field_names, field_types)) do param
     f_name, f_type = param
@@ -106,27 +161,27 @@ function _defstruct_impl(is_immutable, name, fields)
   asserts = map(filter(i -> isdefined(field_asserts,i), 1:length(fields))) do i
     :(@assert($(field_asserts[i])))
   end
-  construct = Expr(:call, name, field_names...)
+  construct = Expr(:call, _name_to_call(name), field_names...)
   ctor_body = Expr(:block, requires..., converts..., asserts..., construct)
   ctor_def = Expr(:call, name, Expr(:parameters, field_defaults...))
   ctor = Expr(:(=), ctor_def, ctor_body)
 
   if is_immutable
-    quote
+    esc(quote
       immutable $(name) <: $(super_name)
         $type_body
       end
 
       $ctor
-    end
+    end)
   else
-    quote
+    esc(quote
       type $(name) <: $(super_name)
         $type_body
       end
 
       $ctor
-    end
+    end)
   end
 end
 

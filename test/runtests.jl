@@ -60,3 +60,15 @@ struct3 = Struct3(field2 = ["vector", "of", "ASCII", "string"])
 
 struct4 = Struct4()
 @test_throws ErrorException (struct4.field = 2)
+
+################################################################################
+# type parameters
+################################################################################
+@defimmutable Struct5{R<:Real, T<:Real} (
+  field  :: Vector{R},
+  field2 :: Vector{T} = zeros(5),
+)
+@test_throws MethodError struct5 = Struct5()
+struct5 = Struct5(field = [1,2,3])
+@test typeof(struct5.field) <: Vector{Int}
+@test typeof(struct5.field2) <: Vector{Float64}
