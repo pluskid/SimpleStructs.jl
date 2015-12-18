@@ -75,13 +75,22 @@ function _type_param_name(expr)
   end
 end
 
-function _name_to_call(name)
+function _name_to_call(name; func_name=nothing)
     if isa(name, Expr) && name.head == :curly
         type_param_names = map(_type_param_name, name.args[2:end])
-        Expr(:curly, name.args[1], type_param_names...)
+        Expr(:curly, isa(func_name, Void)? name.args[1] : func_name, type_param_names...)
     else
-        name
+        isa(func_name, Void)? name : func_name
     end
+end
+
+# from Foo{T,T2<:Real} to Foo{T,T2}
+function _name_to_type(name)
+  if isa(name, Expr) && name.head == :curly
+    Expr(:curly, name.args[1], map(x -> isa(x,Symbol)?x:x.args[1], name.args[2:end])...)
+  else
+    name
+  end
 end
 
 function _defstruct_impl(is_immutable, name, fields)
@@ -155,7 +164,7 @@ function _defstruct_impl(is_immutable, name, fields)
 
   # constructor
   requires = map(required_field) do fname
-    :(@assert(!isa($fname, SimpleStructs.__Undefined), "value for " * $(Base.Meta.quot(fname)) * " is required"))
+    :(@assert(!isa($fname, SimpleStructs.__Undefined), "value for " * $(string(fname)) * " is required"))
   end
   converts = map(zip(field_names, field_types)) do param
     f_name, f_type = param
@@ -175,14 +184,14 @@ function _defstruct_impl(is_immutable, name, fields)
     sep = i == 1 ? :() : :(print(io, ", "))
     quote
       $sep
-      print(io, $(Base.Meta.quot(fname)), "=")
+      print(io, $(string(fname)), "=")
       show(io, obj.$fname)
     end
   end
   show_fields = Expr(:block, show_fields...)
   defshow = quote
-    function Base.show(io::IO, obj::$name)
-      print(io, $(Base.Meta.quot(name)))
+    function $(_name_to_call(name, func_name=:show))(io::IO, obj::$(_name_to_type(name)))
+      print(io, $(string(name)))
       print(io, "(")
       $show_fields
       print(io, ")")
@@ -206,6 +215,7 @@ function _defstruct_impl(is_immutable, name, fields)
   return esc(quote
     $s_def
     $ctor
+
     $defshow
   end)
 end
