@@ -113,7 +113,7 @@ function _defstruct_impl(is_immutable, name, fields)
   end
 
   field_defs     = Array(Expr, length(fields))        # :(field2 :: Int)
-  field_names    = Array(Any, length(fields))         # :field2
+  field_names    = Array(Symbol, length(fields))      # :field2
   field_defaults = Array(Expr, length(fields))        # :(field2 = 0)
   field_types    = Array(Any, length(fields))         # Int
   field_asserts  = Array(Expr, length(fields))        # :(field2 >= 0)
@@ -155,7 +155,7 @@ function _defstruct_impl(is_immutable, name, fields)
 
   # constructor
   requires = map(required_field) do fname
-    :(@assert(!isa($fname, SimpleStructs.__Undefined), "value for " * string($fname) * " is required"))
+    :(@assert(!isa($fname, SimpleStructs.__Undefined), "value for " * $(Base.Meta.quot(fname)) * " is required"))
   end
   converts = map(zip(field_names, field_types)) do param
     f_name, f_type = param
@@ -169,23 +169,45 @@ function _defstruct_impl(is_immutable, name, fields)
   ctor_def = Expr(:call, name, Expr(:parameters, field_defaults...))
   ctor = Expr(:(=), ctor_def, ctor_body)
 
+  # Base.show function
+  show_fields = map(enumerate(field_names)) do i_fname
+    i, fname = i_fname
+    sep = i == 1 ? :() : :(print(io, ", "))
+    quote
+      $sep
+      print(io, $(Base.Meta.quot(fname)), "=")
+      show(io, obj.$fname)
+    end
+  end
+  show_fields = Expr(:block, show_fields...)
+  defshow = quote
+    function Base.show(io::IO, obj::$name)
+      print(io, $(Base.Meta.quot(name)))
+      print(io, "(")
+      $show_fields
+      print(io, ")")
+    end
+  end
+
   if is_immutable
-    esc(quote
+    s_def =  quote
       immutable $(name) <: $(super_name)
         $type_body
       end
-
-      $ctor
-    end)
+    end
   else
-    esc(quote
+    s_def = quote
       type $(name) <: $(super_name)
         $type_body
       end
-
-      $ctor
-    end)
+    end
   end
+
+  return esc(quote
+    $s_def
+    $ctor
+    $defshow
+  end)
 end
 
 end # module
