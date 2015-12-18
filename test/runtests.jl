@@ -91,3 +91,22 @@ struct6 = Struct6(field = [-1,2,3], field2 = [0., 1.])
 @test struct6.field == [-1,2,3]
 @test typeof(struct6.field2) <: Vector{Float64}
 @test struct6.field2 == [0.,1]
+
+################################################################################
+# Base.show
+################################################################################
+@defimmutable Struct7 (
+  f :: Int = 3,
+  f2:: AbstractString = "hello"
+)
+buf = IOBuffer()
+show(buf, Struct7())
+@test takebuf_string(buf) == """Struct7(f=3, f2="hello")"""
+
+@defimmutable Struct8{T, T2 <: Real} <: AbstractVector{T2} (
+  f1 :: T,
+  f2 :: T2 = 0.5
+)
+buf = IOBuffer()
+show(buf, Struct8(f1=1))
+@test takebuf_string(buf) == "Struct8{Int64,Float64}(f1=1, f2=0.5)"

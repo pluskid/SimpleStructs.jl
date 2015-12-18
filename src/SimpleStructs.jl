@@ -191,7 +191,7 @@ function _defstruct_impl(is_immutable, name, fields)
   show_fields = Expr(:block, show_fields...)
   defshow = quote
     function $(_name_to_call(name, func_name=:show))(io::IO, obj::$(_name_to_type(name)))
-      print(io, $(string(name)))
+      print(io, typeof(obj))
       print(io, "(")
       $show_fields
       print(io, ")")
@@ -216,6 +216,7 @@ function _defstruct_impl(is_immutable, name, fields)
     $s_def
     $ctor
 
+    import Base.show
     $defshow
   end)
 end
