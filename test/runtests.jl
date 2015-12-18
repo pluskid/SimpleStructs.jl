@@ -108,5 +108,5 @@ show(buf, Struct7())
   f2 :: T2 = 0.5
 )
 buf = IOBuffer()
-show(buf, Struct8(f1=1))
+show(buf, Struct8(f1=one(Int64)))
 @test takebuf_string(buf) == "Struct8{Int64,Float64}(f1=1, f2=0.5)"
