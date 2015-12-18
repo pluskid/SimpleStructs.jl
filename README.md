@@ -2,6 +2,9 @@
 
 [![Build Status](https://travis-ci.org/pluskid/SimpleStructs.jl.svg?branch=master)](https://travis-ci.org/pluskid/SimpleStructs.jl)
 [![Windows Build status](https://ci.appveyor.com/api/projects/status/u6ew8y036f68i4cs?svg=true)](https://ci.appveyor.com/project/pluskid/simplestructs-jl)
+[![SimpleStructs](http://pkg.julialang.org/badges/SimpleStructs_0.4.svg)](http://pkg.julialang.org/?pkg=SimpleStructs)
+[![SimpleStructs](http://pkg.julialang.org/badges/SimpleStructs_0.5.svg)](http://pkg.julialang.org/?pkg=SimpleStructs)
+[![GitHub license](https://img.shields.io/github/license/pluskid/SimpleStructs.jl.svg)](LICENSE.md)
 
 This is a simple utility of defining structs by specifying types, default values and value constraints for fields, with
 an automatically defined user-friendly constructor. This code is extracted from [Mocha.jl](https://github.com/pluskid/Mocha.jl)
